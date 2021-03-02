@@ -21,7 +21,7 @@ namespace NdisFilter.Test
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            var file = @"C:\Users\IOL0ol1\Desktop\testdata\pb.pcapng"; //args[0];
+            var file = @"C:\Users\IOL0ol1\Desktop\testdata\output_00962_20210302125003.pcapng"; //args[0];
             INetFilter filter = new NetFilter(new IPEndPoint[0], LogManager.GetCurrentClassLogger());
             List<RawPacket> toAdapter = new List<RawPacket>(64);
             List<RawPacket> toMstcp = new List<RawPacket>(64);
@@ -32,8 +32,6 @@ namespace NdisFilter.Test
             {
                 dev.Open();
                 RawCapture packet;
-                long lastProgress = 0;
-                long position = 0;
                 while ((packet = dev.GetNextPacket()) != null)
                 {
                     var host = IPAddress.Parse("31.204.145.45");
@@ -56,13 +54,10 @@ namespace NdisFilter.Test
                                 Console.WriteLine($"{src} => {p.DestinationAddress}");
                                 historyPacket.Add(src, new List<RawPacket>());
                             }
+                            //Console.WriteLine($"{p}");
                         }
                     }
-                    position += packet.Data.Length;
-                    var progress = position * 100 / dev.FileSize;
-                    if (lastProgress != progress)
-                        Console.WriteLine($"Progress : {progress * 20 / 17}");
-                    lastProgress = progress;
+
 
                 }
                 foreach (var item in historyPacket.OrderBy(_ => BitConverter.ToUInt32(_.Key.GetAddressBytes(), 0)))

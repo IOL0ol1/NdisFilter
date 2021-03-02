@@ -135,8 +135,8 @@ namespace NdisFilter.Core
                     {
                         if (BitConverter.ToUInt32(ethernet.Bytes, 42) == 0x2079656B) // pb data
                         {
-                            _logger?.Info(ethernet);
                             _allows.Add(new IPEndPoint(ipPacket.DestinationAddress, udpPacket.DestinationPort));
+                            _logger?.Info(ethernet);
                         }
                         toAdapter.Add(packet);
                     }
