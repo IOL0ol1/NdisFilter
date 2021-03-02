@@ -133,9 +133,11 @@ namespace NdisFilter.Core
                     }
                     else
                     {
-                        if (_logger != null && BitConverter.ToUInt32(ethernet.Bytes, 42) == 0x2079656B) // pb data
-                            _logger.Info(ethernet);
-                        _allows.Add(new IPEndPoint(ipPacket.DestinationAddress, udpPacket.DestinationPort));
+                        if (BitConverter.ToUInt32(ethernet.Bytes, 42) == 0x2079656B) // pb data
+                        {
+                            _logger?.Info(ethernet);
+                            _allows.Add(new IPEndPoint(ipPacket.DestinationAddress, udpPacket.DestinationPort));
+                        }
                         toAdapter.Add(packet);
                     }
                 }
