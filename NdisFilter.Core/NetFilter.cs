@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 
@@ -39,18 +40,18 @@ namespace NdisFilter.Core
 
     public class NetFilter : INetFilter
     {
-        private HashSet<IPEndPoint> _allows;
-        private IPEndPoint[] _config;
+        private HashSet<IPAddress> _allows;
+        private IPAddress[] _config;
         private ILogger _logger;
 
-        private Dictionary<IPEndPoint, List<RawPacket>> _historyPacket = new Dictionary<IPEndPoint, List<RawPacket>>();
+        private Dictionary<IPAddress, List<RawPacket>> _historyPacket = new Dictionary<IPAddress, List<RawPacket>>();
 
 
 
-        public NetFilter(IPEndPoint[] allows = null, ILogger logger = null)
+        public NetFilter(IPAddress[] allows = null, ILogger logger = null)
         {
-            _config = allows ?? new IPEndPoint[0];
-            _allows = new HashSet<IPEndPoint>(allows);
+            _config = allows ?? new IPAddress[0];
+            _allows = new HashSet<IPAddress>(allows);
             _logger = logger;
         }
 
@@ -76,7 +77,7 @@ namespace NdisFilter.Core
             if (last < 0x8000) return false;
             if (ticks.Count < 2) return true;
             var prev = ticks[ticks.Count - 2];
-            var delta = prev > 0xFE00 && last < 0x81FF ? 0x7FFF + last - prev : last - prev;
+            var delta = prev > 0xFF00 && last < 0x80FF ? 0x7FFF + last - prev : last - prev;
             return 0 < delta && delta < 160;
         }
 
@@ -85,13 +86,13 @@ namespace NdisFilter.Core
             foreach (var packet in rawPackets)
             {
 
-                if (Packet.ParsePacket(LinkLayers.Ethernet, packet.Data) is EthernetPacket ethernet && ethernet.PayloadPacket is IPv4Packet ipPacket && ipPacket.PayloadPacket is UdpPacket udpPacket)
+                if (Packet.ParsePacket(LinkLayers.Ethernet, packet.Data) is EthernetPacket ethernet && ethernet.PayloadPacket is IPv4Packet ipPacket)
                 {
                     // Depending on the packet direction insert it to the appropriate list
                     if (packet.DeviceFlags == PACKET_FLAG.PACKET_FLAG_ON_RECEIVE)
                     {
-                        var srcEndPoint = new IPEndPoint(ipPacket.SourceAddress, udpPacket.SourcePort);
-                        if (_allows.Contains(srcEndPoint) || _allows.Contains(new IPEndPoint(ipPacket.SourceAddress, 0)))
+                        var srcAddress = ipPacket.SourceAddress;
+                        if (_allows.Contains(srcAddress))
                         {
                             toMstcp.Add(packet);
                             continue;
@@ -99,7 +100,7 @@ namespace NdisFilter.Core
                         /// Intercepts the first data of the new IP, 
                         /// and when the second data arrives, if the check passes, 
                         /// sends both data to forward upwards the network stack at the same time.
-                        if (_historyPacket.TryGetValue(srcEndPoint, out var packets))
+                        if (_historyPacket.TryGetValue(srcAddress, out var packets))
                         {
                             if (packets.Count != 0)
                             {
@@ -128,16 +129,12 @@ namespace NdisFilter.Core
                         }
                         else
                         {
-                            _historyPacket[srcEndPoint] = new List<RawPacket>(6) { packet };
+                            _historyPacket[srcAddress] = new List<RawPacket>(6) { packet };
                         }
                     }
                     else
                     {
-                        if (BitConverter.ToUInt32(ethernet.Bytes, 42) == 0x2079656B) // pb data
-                        {
-                            _allows.Add(new IPEndPoint(ipPacket.DestinationAddress, udpPacket.DestinationPort));
-                            _logger?.Info(ethernet);
-                        }
+                        _allows.Add(ipPacket.DestinationAddress);
                         toAdapter.Add(packet);
                     }
                 }

@@ -26,11 +26,11 @@ namespace NdisFilter
             get => Allows?.Select(_ => _.ToString()).ToArray();
             set
             {
-                Allows = value?.Where(_ => IPAddress.TryParse(_.Split(':')[0], out var ip)).Select(_ => IPAddress.TryParse(_.Split(':')[0], out var ip) ? new IPEndPoint(ip, int.TryParse(_.Split(':').LastOrDefault(), out var port) ? port : 0) : null).ToArray();
+                Allows = value?.Where(_ => IPAddress.TryParse(_, out var ip)).Select(_ => IPAddress.Parse(_)).ToArray();
             }
         }
 
         [JsonIgnore]
-        public IPEndPoint[] Allows { get; set; }
+        public IPAddress[] Allows { get; set; }
     }
 }

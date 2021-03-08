@@ -21,8 +21,8 @@ namespace NdisFilter.Test
         static void Main(string[] args)
         {
             Console.WriteLine("Hello World!");
-            var file = @"C:\Users\IOL0ol1\Desktop\testdata\output_00962_20210302125003.pcapng"; //args[0];
-            INetFilter filter = new NetFilter(new IPEndPoint[0], LogManager.GetCurrentClassLogger());
+            var file = @"C:\Users\IOL0ol1\Desktop\=\testdata\output_00041_20210301143359.pcapng"; //args[0];
+            INetFilter filter = new NetFilter(new IPAddress[0], LogManager.GetCurrentClassLogger());
             List<RawPacket> toAdapter = new List<RawPacket>(64);
             List<RawPacket> toMstcp = new List<RawPacket>(64);
             Dictionary<IPAddress, List<RawPacket>> historyPacket = new Dictionary<IPAddress, List<RawPacket>>();
@@ -42,28 +42,26 @@ namespace NdisFilter.Test
                     {
                         RawPacket rawPacket = new RawPacket { Data = packet.Data, DeviceFlags = ipv4Packet.SourceAddress.Equals(host) ? PACKET_FLAG.PACKET_FLAG_ON_SEND : PACKET_FLAG.PACKET_FLAG_ON_RECEIVE };
                         filter.Run(new[] { rawPacket }, toMstcp, toAdapter);
-
-                        foreach (var item in toMstcp)
-                        {
-                            var p = Packet.ParsePacket(LinkLayers.Ethernet, item.Data).Extract<IPv4Packet>();
-                            var src = p.SourceAddress;
-                            if (historyPacket.ContainsKey(src))
-                                historyPacket[src].Add(item);
-                            else
-                            {
-                                Console.WriteLine($"{src} => {p.DestinationAddress}");
-                                historyPacket.Add(src, new List<RawPacket>());
-                            }
-                            //Console.WriteLine($"{p}");
-                        }
+                        toMstcp.Clear();
+                        toAdapter.Clear();
+                        //foreach (var item in toMstcp)
+                        //{
+                        //    var p = Packet.ParsePacket(LinkLayers.Ethernet, item.Data).Extract<IPv4Packet>();
+                        //    var src = p.SourceAddress;
+                        //    if (historyPacket.ContainsKey(src))
+                        //        historyPacket[src].Add(item);
+                        //    else
+                        //    {
+                        //        Console.WriteLine($"{src} => {p.DestinationAddress}");
+                        //        historyPacket.Add(src, new List<RawPacket>());
+                        //    }
+                        //    //Console.WriteLine($"{p}");
+                        //}
                     }
 
 
                 }
-                foreach (var item in historyPacket.OrderBy(_ => BitConverter.ToUInt32(_.Key.GetAddressBytes(), 0)))
-                {
-                    Console.WriteLine($"{item.Key} {item.Value.Count}");
-                }
+
 
             }
             finally
