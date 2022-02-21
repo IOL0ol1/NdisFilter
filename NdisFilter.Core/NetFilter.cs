@@ -72,11 +72,12 @@ namespace NdisFilter.Core
         /// <returns></returns>
         private bool CheckPackets(List<RawPacket> rawPackets)
         {
-            var ticks = rawPackets.Select(_ => _.Data[43] << 8 | _.Data[42]).ToList();
-            var last = ticks[ticks.Count - 1];
+            var ticks = rawPackets.Select(_ => _.Data[43] << 8 | _.Data[42]).ToArray();
+            if (rawPackets.First().Data.Length > 600) return false;
+            var last = ticks[ticks.Length - 1];
             if (last < 0x8000) return false;
-            if (ticks.Count < 2) return true;
-            var prev = ticks[ticks.Count - 2];
+            if (ticks.Length < 2) return true;
+            var prev = ticks[ticks.Length - 2];
             var delta = prev > 0xFF00 && last < 0x80FF ? 0x7FFF + last - prev : last - prev;
             return 0 < delta && delta < 160;
         }
